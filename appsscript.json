@@ -1,0 +1,11 @@
+{
+  "timeZone": "Europe/Budapest",
+  "dependencies": {
+    "enabledAdvancedServices": [{
+      "userSymbol": "Drive",
+      "serviceId": "drive",
+      "version": "v2"
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER"
+}
