@@ -1,62 +1,63 @@
 function DeleteTrashEvent() {
 
+  const scriptProperties = PropertiesService.getScriptProperties();
+
   try {
     const limitDate = new Date(),
-      scriptProperties = PropertiesService.getScriptProperties(),
       subDays = scriptProperties.getProperty("DeleteOlderThanDays");
 
-    //Hogy csak akkor írjon separatort, ha törlődik az adott fájl (írt valamit a konzolra)
-    var separatorNeeded = false;
+    //Separator only needed when something was written was written.
+    let separatorNeeded = false;
 
     if (isNaN(parseInt(subDays))) {
-      logToBoth("subDays is not a valid integer! (" + subDays + ")");
+      Logger.log("subDays is not a valid integer! (" + subDays + ")");
       return;
     }
 
-    //Az aktuális dátum napjaiból kivonjuk a megadott számú napot.
+    //Subtracting days from the current date
     limitDate.setDate(limitDate.getDate() - subDays);
 
     const startMessage = "Deleting files and folders that were trashed before " + limitDate.toLocaleString();
-    logToBoth(startMessage);
+    Logger.log(startMessage);
 
-    //Mappák törlése
-    var folders = DriveApp.getTrashedFolders();
+    //Deleting folders first, because it also deletes the folder's content (including files), so it runs much faster.
+    Logger.log("Folders:\n");
+    let folders = DriveApp.getTrashedFolders();
     while (folders.hasNext()) {
       try {
-        var folder = folders.next();
+        let folder = folders.next();
 
         if (folder.getLastUpdated() >= limitDate) {
           continue;
         }
 
-        var parentFolder = null;
-        var lastDeletableParentFolder = null;
+        let parentFolder = null;
+        let deletableFolderFound = false;
 
+        //Searching for parent folder wich were deleted before the limit date
         while ((parentFolder = hasTrashedParent(folder.getParents())) != null) {
+
           if (parentFolder.getLastUpdated() < limitDate) {
-            lastDeletableParentFolder = parentFolder;
+            folder = parentFolder;
+            deletableFolderFound = true;
           }
           else {
             break;
           }
         }
 
-        if (lastDeletableParentFolder != null) {
-          folder = lastDeletableParentFolder;
-
-          //Mivel a szülő mappáját fogjuk törölni, ezért valószínűleg több olyan mappa is van az eredeti folders iterátorban, ami a szülő mappával együtt törlődni fog.
-          //Ha újra lekérdeződik a trashed folders, akkor ezek a mappák már nem lesznek benne.
+        if (deletableFolderFound) {
+          //If a suitable parent folder was found, this line will delete the parent folder's subfolders from the iterator, which were deleted with the parent folder.
           folders = DriveApp.getTrashedFolders();
         }
 
         separatorNeeded = true;
 
         logDeletion("folder", folder);
-
         Drive.Files.remove(folder.getId());
       }
       catch (e) {
-        logToBoth("Error while processing folder '" + folder.getName() + "'\nReason: " + e);
+        Logger.log("Error while processing folder '" + folder.getName() + "'\nReason: " + e);
       }
       finally {
         if (separatorNeeded) {
@@ -66,24 +67,25 @@ function DeleteTrashEvent() {
       }
     }
 
-    console.log("\n-----------------------------------------------------------------------\n");
+    Logger.log("Files:\n");
 
-    //Fájlok törlése
+    //Deleting files
     const files = DriveApp.getTrashedFiles();
     while (files.hasNext()) {
       try {
-        var file = files.next();
+        let file = files.next();
 
-        if (file.getLastUpdated() < limitDate) {
-          separatorNeeded = true;
-
-          logDeletion("file", file);
-
-          Drive.Files.remove(file.getId());
+        if (file.getLastUpdated() >= limitDate) {
+          continue;
         }
+
+        separatorNeeded = true;
+
+        logDeletion("file", file);
+        Drive.Files.remove(file.getId());
       }
       catch (e) {
-        logToBoth("Error while processing file '" + file.getName() + "'\nReason: " + e);
+        Logger.log("Error while processing file '" + file.getName() + "'\nReason: " + e);
       }
       finally {
         if (separatorNeeded) {
@@ -94,7 +96,7 @@ function DeleteTrashEvent() {
     }
   }
   catch (e) {
-    logToBoth("Error while executing:\n" + e);
+    Logger.log("Error while executing:\n" + e);
   }
   finally {
     try {
