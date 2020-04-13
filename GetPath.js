@@ -5,6 +5,7 @@
  */
 function GetPath(entry) {
   const entryName = entry.getName();
+  const logSeparator = ", ";
   console.log("Getting path of " + entryName + " start");
 
   let path = [entryName];
@@ -15,20 +16,23 @@ function GetPath(entry) {
 
     while ((parent = hasParent(parent)) != null) {
 
-      console.log("[3] Parent: " + parent);
+      let log = "";
+      log += "[3] Parent: " + parent;
 
       //Unshift puts the element to the beginning of the array
       path.unshift(parent.getName());
-      console.log("[4] Path: " + path);
+      log += logSeparator + "[4] Path: " + path;
 
       parent = parent.getParents();
       if (!parent) {
-        console.log("[5] Parent: " + parent);
+        log += logSeparator + "[5] Parent: " + parent;
       }
+
+      console.log(log);
     }
 
     path = path.join("/");
-    console.log("[6] Total path: " + path);
+    log += logSeparator + "[6] Total path: " + path;
   }
   catch (e) {
     console.log("Error while getting path of " + entryName + "\nError: " + e);
@@ -45,22 +49,29 @@ function GetPath(entry) {
  * @returns {Object} The first trashed parent object. If there is none, returns null.
  */
 function hasTrashedParent(parents) {
-  let hasParent = parents.hasNext();
 
-  console.log("[1] Has parent: " + hasParent);
+  let log = "";
+  try {
+    let hasParent = parents.hasNext();
 
-  if (!hasParent)
+    log += "[1] Has parent: " + hasParent;
+
+    if (!hasParent)
+      return null;
+
+    let parent = parents.next(),
+      parentIsTrashed = parent.isTrashed();
+
+    log += ", [2] Parent is trashed: " + parentIsTrashed;
+
+    if (parentIsTrashed)
+      return parent;
+
     return null;
-
-  let parent = parents.next(),
-    parentIsTrashed = parent.isTrashed();
-
-  console.log("[2] Parent is trashed: " + parentIsTrashed);
-
-  if (parentIsTrashed)
-    return parent;
-
-  return null;
+  }
+  finally {
+    //console.log(log);
+  }
 }
 
 /**
@@ -71,7 +82,7 @@ function hasTrashedParent(parents) {
 function hasParent(parents) {
   let hasParent = parents.hasNext();
 
-  console.log("[1] Has parent: " + hasParent);
+  //console.log("[1] Has parent: " + hasParent);
 
   if (hasParent) {
     return parents.next();
