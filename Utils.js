@@ -5,7 +5,10 @@
 function logDeletion(entry) {
 
   const entryType = getEntryType(entry);
-  Logger.log("Deleting " + entryType + " '" + GetPath(entry) + "'\n\tlast modified " + entry.getLastUpdated().toLocaleString());
+  const path = GetPath(entry);
+  const lastModified = entry.getLastUpdated().toLocaleString();
+
+  Logger.log("Deleting " + entryType + " '" + path + "'\nlast modified " + lastModified);
 }
 
 /**
@@ -31,39 +34,41 @@ function getEntryType(entry) {
  */
 function deleteOldEntries(entryIterator, limitDateTime) {
 
+  const defaultEntryTypeValue = "(entryType)";
+  let entryType = defaultEntryTypeValue;
+  let entriesToDelete = [];
   while (entryIterator.hasNext()) {
 
-    let separatorNeeded = false;
-    let entry;
+    let entry = entryIterator.next();
 
+    if (entryType == defaultEntryTypeValue) {
+      entryType = getEntryType(entry);
+    }
+
+    let lastUpdated = entry.getLastUpdated();
+    let trashedParent = hasTrashedParent(entry.getParents());
+
+    //If not trashed old enough or this entry is in a trashed folder, then do not delete it.
+    //If you trash a folder, the lastUpdated property only updates for the trashed folder and not for its contents
+    //If you trash a folder, then its contents may be deleted at the next run of this script, because they were modified a long time ago.
+    if (!(lastUpdated >= limitDateTime || trashedParent != null)) {
+      entriesToDelete.push(entry);
+    }
+  }
+
+  Logger.log(`${entriesToDelete.length} ${entryType}s marked for deletion.`)
+
+  for (let i = 0; i < entriesToDelete.length; i++) {
     try {
-      entry = entryIterator.next();
-
-      let lastUpdated = entry.getLastUpdated();
-      let trashedParent = hasTrashedParent(entry.getParents());
-
-      //If not trashed old enough or this entry is in a trashed folder, then do not delete it.
-      //If you trash a folder, the lastUpdated property only updates for the trashed folder and not for its contents
-      //If you trash a folder, then its contents may be deleted at the next run of this script, because they were modified a long time ago.
-      if (lastUpdated >= limitDateTime || trashedParent != null) {
-        continue;
-      }
-
-      //Separator only needed when something was written.
-      separatorNeeded = true;
-
+      let entry = entriesToDelete[i];
       logDeletion(entry);
       Drive.Files.remove(entry.getId());
     }
     catch (e) {
-      var entryType = getEntryType(entry);
       Logger.log("Error while processing " + entryType + " '" + entry.getName() + "'\nReason: " + e);
     }
     finally {
-      if (separatorNeeded) {
-        separatorNeeded = false;
-        Logger.log("-----------------------------------------------------------------------");
-      }
+      Logger.log("-----------------------------------------------------------------------");
     }
   }
 }
