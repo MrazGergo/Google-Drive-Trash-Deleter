@@ -4,9 +4,9 @@
  * @returns {string} The full path of the entry.
  */
 function GetPath(entry) {
-  const entryName = "'" + entry.getName() + "'";
+  const entryName = entry.getName();
   const logSeparator = ", ";
-  console.log("Getting path of " + entryName + " start");
+  console.log("Getting path of '" + entryName + "' start");
 
   let path = [entryName];
 
@@ -34,10 +34,10 @@ function GetPath(entry) {
     console.log("[6] Total path: " + path);
   }
   catch (e) {
-    console.log("Error while getting path of " + entryName + "\nError: " + e);
+    console.log("Error while getting path of '" + entryName + "'\nError: " + e);
   }
   finally {
-    console.log("Getting path of " + entryName + " end");
+    console.log("Getting path of '" + entryName + "' end");
     return path;
   }
 }

@@ -41,14 +41,14 @@ function deleteOldEntries(entryIterator, limitDateTime) {
 
     try {
       let entry = entryIterator.next();
-  
+
       if (entryType == defaultEntryTypeValue) {
         entryType = getEntryType(entry);
       }
-  
+
       let lastUpdated = entry.getLastUpdated();
       let trashedParent = hasTrashedParent(entry.getParents());
-  
+
       //If not trashed old enough or this entry is in a trashed folder, then do not delete it.
       //If you trash a folder, the lastUpdated property only updates for the trashed folder and not for its contents
       //If you trash a folder, then its contents may be deleted at the next run of this script, because they were modified a long time ago.
@@ -56,8 +56,8 @@ function deleteOldEntries(entryIterator, limitDateTime) {
         entriesToDelete.push(entry);
       }
     }
-    catch(e) {
-        Logger.log(`Error while processing ${entryType}:\n${e}`)
+    catch (e) {
+      Logger.log(`Error while processing ${entryType}:\n${e}`)
     }
   }
 
